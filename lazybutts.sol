@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: MIT
 
+/* 
+    Lazy Butts is not affiliated with Lazy Lions.
+    It is an unofficial extension brought to you by the 3D Kings.
+*/
+
 pragma solidity ^0.8.21;
 
 import "./utils/Delegated.sol";
@@ -7,10 +12,8 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/finance/PaymentSplitter.sol";
-import "operator-filter-registry/src/DefaultOperatorFilterer.sol";
 
 contract LazyButts is
-    DefaultOperatorFilterer,
     Delegated,
     PaymentSplitter,
     ERC721
@@ -22,8 +25,8 @@ contract LazyButts is
     string private _tokenURIPrefix = "https://api.the3dkings.io/api/metadata/";
     string private _tokenURISuffix = ".json";
 
-    bytes32 public merkleRoot;
-    bool public isAllowListActive = true;
+    bytes32 public merkleRoot = 0x5bbc1ee9865f275b8666093c9096f0525756bc427e2437047cef9396ff53e069;
+    bool public isAllowListActive = false;
     bool public isMintActive = false;
 
     IERC721 private LazyLions =
@@ -34,12 +37,12 @@ contract LazyButts is
     mapping (address => bool) public allowListMinted;
 
     address[] private _payees = [
-        0x7B850fEf1064680d2F9e86CD1a0B83C052a2620c, // Community Wallet
-        0x4cbF16139474316F4Ab10ec251195f992Bbe8B12, // Operational Wallet
-        0x9e25Ce06a0b5Df2C8D7A8893E83AfB89966BfC92, // Team Member Wallet
-        0x4517b0f5d99115223904D5f56DF5352A88c9b711, // Team Member Wallet
-        0xc8028BDA23BbCF532A1352Df138d4634aFc91B8c, // Team Member Wallet
-        0x0F6FCd1C0cfdD60d1f21A4A4Aa0f47a2B21d5e82 // Team Member Wallet
+        0x49CAE18B5B796e993Cce4A43cAdA316B8c7388eC, // Community Wallet
+        0x616188ADB7928954B922FBc672e2f3e82f4db578, // Operational Wallet
+        0x626cdB47a91810EDb2Bde1d69e60C1B17071CF25, // Team Member Wallet
+        0x6628FC01ae06E134e08E4E8A01Ed1075C77c87A1, // Team Member Wallet
+        0x7Cf39e8D6F6f9F25E925Dad7EB371276231780d7, // Team Member Wallet
+        0xC02Dd50b25364e747410730A1df9B72A92C3C68B  // Team Member Wallet
     ];
 
     uint256[] private _shares = [5000, 1000, 1000, 1000, 1000, 1000];
@@ -253,43 +256,4 @@ contract LazyButts is
         isMintActive = isMintActive_;
     }
 
-    // ERC721 Overrides for OpenSea's Operator Filter 
-    function setApprovalForAll(
-        address operator,
-        bool approved
-    ) public override onlyAllowedOperatorApproval(operator) {
-        super.setApprovalForAll(operator, approved);
-    }
-
-    function approve(
-        address operator,
-        uint256 tokenId
-    ) public override onlyAllowedOperatorApproval(operator) {
-        super.approve(operator, tokenId);
-    }
-
-    function transferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) public override onlyAllowedOperator(from) {
-        super.transferFrom(from, to, tokenId);
-    }
-
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) public override onlyAllowedOperator(from) {
-        super.safeTransferFrom(from, to, tokenId);
-    }
-
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId,
-        bytes memory data
-    ) public override onlyAllowedOperator(from) {
-        super.safeTransferFrom(from, to, tokenId, data);
-    }
 }
