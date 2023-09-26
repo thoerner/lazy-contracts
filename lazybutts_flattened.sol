@@ -1,553 +1,146 @@
 
-// File: @openzeppelin/contracts/utils/Counters.sol
+// File: @openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol
 
 
-// OpenZeppelin Contracts v4.4.1 (utils/Counters.sol)
+// OpenZeppelin Contracts (last updated v4.9.0) (token/ERC20/extensions/IERC20Permit.sol)
 
 pragma solidity ^0.8.0;
 
 /**
- * @title Counters
- * @author Matt Condon (@shrugs)
- * @dev Provides counters that can only be incremented, decremented or reset. This can be used e.g. to track the number
- * of elements in a mapping, issuing ERC721 ids, or counting request ids.
+ * @dev Interface of the ERC20 Permit extension allowing approvals to be made via signatures, as defined in
+ * https://eips.ethereum.org/EIPS/eip-2612[EIP-2612].
  *
- * Include with `using Counters for Counters.Counter;`
+ * Adds the {permit} method, which can be used to change an account's ERC20 allowance (see {IERC20-allowance}) by
+ * presenting a message signed by the account. By not relying on {IERC20-approve}, the token holder account doesn't
+ * need to send a transaction, and thus is not required to hold Ether at all.
  */
-library Counters {
-    struct Counter {
-        // This variable should never be directly accessed by users of the library: interactions must be restricted to
-        // the library's function. As of Solidity v0.5.2, this cannot be enforced, though there is a proposal to add
-        // this feature: see https://github.com/ethereum/solidity/issues/4637
-        uint256 _value; // default: 0
-    }
+interface IERC20Permit {
+    /**
+     * @dev Sets `value` as the allowance of `spender` over ``owner``'s tokens,
+     * given ``owner``'s signed approval.
+     *
+     * IMPORTANT: The same issues {IERC20-approve} has related to transaction
+     * ordering also apply here.
+     *
+     * Emits an {Approval} event.
+     *
+     * Requirements:
+     *
+     * - `spender` cannot be the zero address.
+     * - `deadline` must be a timestamp in the future.
+     * - `v`, `r` and `s` must be a valid `secp256k1` signature from `owner`
+     * over the EIP712-formatted function arguments.
+     * - the signature must use ``owner``'s current nonce (see {nonces}).
+     *
+     * For more information on the signature format, see the
+     * https://eips.ethereum.org/EIPS/eip-2612#specification[relevant EIP
+     * section].
+     */
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
 
-    function current(Counter storage counter) internal view returns (uint256) {
-        return counter._value;
-    }
+    /**
+     * @dev Returns the current nonce for `owner`. This value must be
+     * included whenever a signature is generated for {permit}.
+     *
+     * Every successful call to {permit} increases ``owner``'s nonce by one. This
+     * prevents a signature from being used multiple times.
+     */
+    function nonces(address owner) external view returns (uint256);
 
-    function increment(Counter storage counter) internal {
-        unchecked {
-            counter._value += 1;
-        }
-    }
-
-    function decrement(Counter storage counter) internal {
-        uint256 value = counter._value;
-        require(value > 0, "Counter: decrement overflow");
-        unchecked {
-            counter._value = value - 1;
-        }
-    }
-
-    function reset(Counter storage counter) internal {
-        counter._value = 0;
-    }
+    /**
+     * @dev Returns the domain separator used in the encoding of the signature for {permit}, as defined by {EIP712}.
+     */
+    // solhint-disable-next-line func-name-mixedcase
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
 
-// File: @openzeppelin/contracts/utils/structs/EnumerableSet.sol
+// File: @openzeppelin/contracts/token/ERC20/IERC20.sol
 
 
-// OpenZeppelin Contracts (last updated v4.9.0) (utils/structs/EnumerableSet.sol)
-// This file was procedurally generated from scripts/generate/templates/EnumerableSet.js.
-
-pragma solidity ^0.8.0;
-
-/**
- * @dev Library for managing
- * https://en.wikipedia.org/wiki/Set_(abstract_data_type)[sets] of primitive
- * types.
- *
- * Sets have the following properties:
- *
- * - Elements are added, removed, and checked for existence in constant time
- * (O(1)).
- * - Elements are enumerated in O(n). No guarantees are made on the ordering.
- *
- * ```solidity
- * contract Example {
- *     // Add the library methods
- *     using EnumerableSet for EnumerableSet.AddressSet;
- *
- *     // Declare a set state variable
- *     EnumerableSet.AddressSet private mySet;
- * }
- * ```
- *
- * As of v3.3.0, sets of type `bytes32` (`Bytes32Set`), `address` (`AddressSet`)
- * and `uint256` (`UintSet`) are supported.
- *
- * [WARNING]
- * ====
- * Trying to delete such a structure from storage will likely result in data corruption, rendering the structure
- * unusable.
- * See https://github.com/ethereum/solidity/pull/11843[ethereum/solidity#11843] for more info.
- *
- * In order to clean an EnumerableSet, you can either remove all elements one by one or create a fresh instance using an
- * array of EnumerableSet.
- * ====
- */
-library EnumerableSet {
-    // To implement this library for multiple types with as little code
-    // repetition as possible, we write it in terms of a generic Set type with
-    // bytes32 values.
-    // The Set implementation uses private functions, and user-facing
-    // implementations (such as AddressSet) are just wrappers around the
-    // underlying Set.
-    // This means that we can only create new EnumerableSets for types that fit
-    // in bytes32.
-
-    struct Set {
-        // Storage of set values
-        bytes32[] _values;
-        // Position of the value in the `values` array, plus 1 because index 0
-        // means a value is not in the set.
-        mapping(bytes32 => uint256) _indexes;
-    }
-
-    /**
-     * @dev Add a value to a set. O(1).
-     *
-     * Returns true if the value was added to the set, that is if it was not
-     * already present.
-     */
-    function _add(Set storage set, bytes32 value) private returns (bool) {
-        if (!_contains(set, value)) {
-            set._values.push(value);
-            // The value is stored at length-1, but we add 1 to all indexes
-            // and use 0 as a sentinel value
-            set._indexes[value] = set._values.length;
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * @dev Removes a value from a set. O(1).
-     *
-     * Returns true if the value was removed from the set, that is if it was
-     * present.
-     */
-    function _remove(Set storage set, bytes32 value) private returns (bool) {
-        // We read and store the value's index to prevent multiple reads from the same storage slot
-        uint256 valueIndex = set._indexes[value];
-
-        if (valueIndex != 0) {
-            // Equivalent to contains(set, value)
-            // To delete an element from the _values array in O(1), we swap the element to delete with the last one in
-            // the array, and then remove the last element (sometimes called as 'swap and pop').
-            // This modifies the order of the array, as noted in {at}.
-
-            uint256 toDeleteIndex = valueIndex - 1;
-            uint256 lastIndex = set._values.length - 1;
-
-            if (lastIndex != toDeleteIndex) {
-                bytes32 lastValue = set._values[lastIndex];
-
-                // Move the last value to the index where the value to delete is
-                set._values[toDeleteIndex] = lastValue;
-                // Update the index for the moved value
-                set._indexes[lastValue] = valueIndex; // Replace lastValue's index to valueIndex
-            }
-
-            // Delete the slot where the moved value was stored
-            set._values.pop();
-
-            // Delete the index for the deleted slot
-            delete set._indexes[value];
-
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * @dev Returns true if the value is in the set. O(1).
-     */
-    function _contains(Set storage set, bytes32 value) private view returns (bool) {
-        return set._indexes[value] != 0;
-    }
-
-    /**
-     * @dev Returns the number of values on the set. O(1).
-     */
-    function _length(Set storage set) private view returns (uint256) {
-        return set._values.length;
-    }
-
-    /**
-     * @dev Returns the value stored at position `index` in the set. O(1).
-     *
-     * Note that there are no guarantees on the ordering of values inside the
-     * array, and it may change when more values are added or removed.
-     *
-     * Requirements:
-     *
-     * - `index` must be strictly less than {length}.
-     */
-    function _at(Set storage set, uint256 index) private view returns (bytes32) {
-        return set._values[index];
-    }
-
-    /**
-     * @dev Return the entire set in an array
-     *
-     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed
-     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that
-     * this function has an unbounded cost, and using it as part of a state-changing function may render the function
-     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.
-     */
-    function _values(Set storage set) private view returns (bytes32[] memory) {
-        return set._values;
-    }
-
-    // Bytes32Set
-
-    struct Bytes32Set {
-        Set _inner;
-    }
-
-    /**
-     * @dev Add a value to a set. O(1).
-     *
-     * Returns true if the value was added to the set, that is if it was not
-     * already present.
-     */
-    function add(Bytes32Set storage set, bytes32 value) internal returns (bool) {
-        return _add(set._inner, value);
-    }
-
-    /**
-     * @dev Removes a value from a set. O(1).
-     *
-     * Returns true if the value was removed from the set, that is if it was
-     * present.
-     */
-    function remove(Bytes32Set storage set, bytes32 value) internal returns (bool) {
-        return _remove(set._inner, value);
-    }
-
-    /**
-     * @dev Returns true if the value is in the set. O(1).
-     */
-    function contains(Bytes32Set storage set, bytes32 value) internal view returns (bool) {
-        return _contains(set._inner, value);
-    }
-
-    /**
-     * @dev Returns the number of values in the set. O(1).
-     */
-    function length(Bytes32Set storage set) internal view returns (uint256) {
-        return _length(set._inner);
-    }
-
-    /**
-     * @dev Returns the value stored at position `index` in the set. O(1).
-     *
-     * Note that there are no guarantees on the ordering of values inside the
-     * array, and it may change when more values are added or removed.
-     *
-     * Requirements:
-     *
-     * - `index` must be strictly less than {length}.
-     */
-    function at(Bytes32Set storage set, uint256 index) internal view returns (bytes32) {
-        return _at(set._inner, index);
-    }
-
-    /**
-     * @dev Return the entire set in an array
-     *
-     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed
-     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that
-     * this function has an unbounded cost, and using it as part of a state-changing function may render the function
-     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.
-     */
-    function values(Bytes32Set storage set) internal view returns (bytes32[] memory) {
-        bytes32[] memory store = _values(set._inner);
-        bytes32[] memory result;
-
-        /// @solidity memory-safe-assembly
-        assembly {
-            result := store
-        }
-
-        return result;
-    }
-
-    // AddressSet
-
-    struct AddressSet {
-        Set _inner;
-    }
-
-    /**
-     * @dev Add a value to a set. O(1).
-     *
-     * Returns true if the value was added to the set, that is if it was not
-     * already present.
-     */
-    function add(AddressSet storage set, address value) internal returns (bool) {
-        return _add(set._inner, bytes32(uint256(uint160(value))));
-    }
-
-    /**
-     * @dev Removes a value from a set. O(1).
-     *
-     * Returns true if the value was removed from the set, that is if it was
-     * present.
-     */
-    function remove(AddressSet storage set, address value) internal returns (bool) {
-        return _remove(set._inner, bytes32(uint256(uint160(value))));
-    }
-
-    /**
-     * @dev Returns true if the value is in the set. O(1).
-     */
-    function contains(AddressSet storage set, address value) internal view returns (bool) {
-        return _contains(set._inner, bytes32(uint256(uint160(value))));
-    }
-
-    /**
-     * @dev Returns the number of values in the set. O(1).
-     */
-    function length(AddressSet storage set) internal view returns (uint256) {
-        return _length(set._inner);
-    }
-
-    /**
-     * @dev Returns the value stored at position `index` in the set. O(1).
-     *
-     * Note that there are no guarantees on the ordering of values inside the
-     * array, and it may change when more values are added or removed.
-     *
-     * Requirements:
-     *
-     * - `index` must be strictly less than {length}.
-     */
-    function at(AddressSet storage set, uint256 index) internal view returns (address) {
-        return address(uint160(uint256(_at(set._inner, index))));
-    }
-
-    /**
-     * @dev Return the entire set in an array
-     *
-     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed
-     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that
-     * this function has an unbounded cost, and using it as part of a state-changing function may render the function
-     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.
-     */
-    function values(AddressSet storage set) internal view returns (address[] memory) {
-        bytes32[] memory store = _values(set._inner);
-        address[] memory result;
-
-        /// @solidity memory-safe-assembly
-        assembly {
-            result := store
-        }
-
-        return result;
-    }
-
-    // UintSet
-
-    struct UintSet {
-        Set _inner;
-    }
-
-    /**
-     * @dev Add a value to a set. O(1).
-     *
-     * Returns true if the value was added to the set, that is if it was not
-     * already present.
-     */
-    function add(UintSet storage set, uint256 value) internal returns (bool) {
-        return _add(set._inner, bytes32(value));
-    }
-
-    /**
-     * @dev Removes a value from a set. O(1).
-     *
-     * Returns true if the value was removed from the set, that is if it was
-     * present.
-     */
-    function remove(UintSet storage set, uint256 value) internal returns (bool) {
-        return _remove(set._inner, bytes32(value));
-    }
-
-    /**
-     * @dev Returns true if the value is in the set. O(1).
-     */
-    function contains(UintSet storage set, uint256 value) internal view returns (bool) {
-        return _contains(set._inner, bytes32(value));
-    }
-
-    /**
-     * @dev Returns the number of values in the set. O(1).
-     */
-    function length(UintSet storage set) internal view returns (uint256) {
-        return _length(set._inner);
-    }
-
-    /**
-     * @dev Returns the value stored at position `index` in the set. O(1).
-     *
-     * Note that there are no guarantees on the ordering of values inside the
-     * array, and it may change when more values are added or removed.
-     *
-     * Requirements:
-     *
-     * - `index` must be strictly less than {length}.
-     */
-    function at(UintSet storage set, uint256 index) internal view returns (uint256) {
-        return uint256(_at(set._inner, index));
-    }
-
-    /**
-     * @dev Return the entire set in an array
-     *
-     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed
-     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that
-     * this function has an unbounded cost, and using it as part of a state-changing function may render the function
-     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.
-     */
-    function values(UintSet storage set) internal view returns (uint256[] memory) {
-        bytes32[] memory store = _values(set._inner);
-        uint256[] memory result;
-
-        /// @solidity memory-safe-assembly
-        assembly {
-            result := store
-        }
-
-        return result;
-    }
-}
-
-// File: @openzeppelin/contracts/access/IAccessControl.sol
-
-
-// OpenZeppelin Contracts v4.4.1 (access/IAccessControl.sol)
+// OpenZeppelin Contracts (last updated v4.9.0) (token/ERC20/IERC20.sol)
 
 pragma solidity ^0.8.0;
 
 /**
- * @dev External interface of AccessControl declared to support ERC165 detection.
+ * @dev Interface of the ERC20 standard as defined in the EIP.
  */
-interface IAccessControl {
+interface IERC20 {
     /**
-     * @dev Emitted when `newAdminRole` is set as ``role``'s admin role, replacing `previousAdminRole`
+     * @dev Emitted when `value` tokens are moved from one account (`from`) to
+     * another (`to`).
      *
-     * `DEFAULT_ADMIN_ROLE` is the starting admin for all roles, despite
-     * {RoleAdminChanged} not being emitted signaling this.
-     *
-     * _Available since v3.1._
+     * Note that `value` may be zero.
      */
-    event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole);
+    event Transfer(address indexed from, address indexed to, uint256 value);
 
     /**
-     * @dev Emitted when `account` is granted `role`.
-     *
-     * `sender` is the account that originated the contract call, an admin role
-     * bearer except when using {AccessControl-_setupRole}.
+     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
+     * a call to {approve}. `value` is the new allowance.
      */
-    event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 
     /**
-     * @dev Emitted when `account` is revoked `role`.
-     *
-     * `sender` is the account that originated the contract call:
-     *   - if using `revokeRole`, it is the admin role bearer
-     *   - if using `renounceRole`, it is the role bearer (i.e. `account`)
+     * @dev Returns the amount of tokens in existence.
      */
-    event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender);
+    function totalSupply() external view returns (uint256);
 
     /**
-     * @dev Returns `true` if `account` has been granted `role`.
+     * @dev Returns the amount of tokens owned by `account`.
      */
-    function hasRole(bytes32 role, address account) external view returns (bool);
+    function balanceOf(address account) external view returns (uint256);
 
     /**
-     * @dev Returns the admin role that controls `role`. See {grantRole} and
-     * {revokeRole}.
+     * @dev Moves `amount` tokens from the caller's account to `to`.
      *
-     * To change a role's admin, use {AccessControl-_setRoleAdmin}.
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
      */
-    function getRoleAdmin(bytes32 role) external view returns (bytes32);
+    function transfer(address to, uint256 amount) external returns (bool);
 
     /**
-     * @dev Grants `role` to `account`.
+     * @dev Returns the remaining number of tokens that `spender` will be
+     * allowed to spend on behalf of `owner` through {transferFrom}. This is
+     * zero by default.
      *
-     * If `account` had not been already granted `role`, emits a {RoleGranted}
-     * event.
-     *
-     * Requirements:
-     *
-     * - the caller must have ``role``'s admin role.
+     * This value changes when {approve} or {transferFrom} are called.
      */
-    function grantRole(bytes32 role, address account) external;
+    function allowance(address owner, address spender) external view returns (uint256);
 
     /**
-     * @dev Revokes `role` from `account`.
+     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
      *
-     * If `account` had been granted `role`, emits a {RoleRevoked} event.
+     * Returns a boolean value indicating whether the operation succeeded.
      *
-     * Requirements:
+     * IMPORTANT: Beware that changing an allowance with this method brings the risk
+     * that someone may use both the old and the new allowance by unfortunate
+     * transaction ordering. One possible solution to mitigate this race
+     * condition is to first reduce the spender's allowance to 0 and set the
+     * desired value afterwards:
+     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
      *
-     * - the caller must have ``role``'s admin role.
+     * Emits an {Approval} event.
      */
-    function revokeRole(bytes32 role, address account) external;
+    function approve(address spender, uint256 amount) external returns (bool);
 
     /**
-     * @dev Revokes `role` from the calling account.
+     * @dev Moves `amount` tokens from `from` to `to` using the
+     * allowance mechanism. `amount` is then deducted from the caller's
+     * allowance.
      *
-     * Roles are often managed via {grantRole} and {revokeRole}: this function's
-     * purpose is to provide a mechanism for accounts to lose their privileges
-     * if they are compromised (such as when a trusted device is misplaced).
+     * Returns a boolean value indicating whether the operation succeeded.
      *
-     * If the calling account had been granted `role`, emits a {RoleRevoked}
-     * event.
-     *
-     * Requirements:
-     *
-     * - the caller must be `account`.
+     * Emits a {Transfer} event.
      */
-    function renounceRole(bytes32 role, address account) external;
-}
-
-// File: @openzeppelin/contracts/access/IAccessControlEnumerable.sol
-
-
-// OpenZeppelin Contracts v4.4.1 (access/IAccessControlEnumerable.sol)
-
-pragma solidity ^0.8.0;
-
-
-/**
- * @dev External interface of AccessControlEnumerable declared to support ERC165 detection.
- */
-interface IAccessControlEnumerable is IAccessControl {
-    /**
-     * @dev Returns one of the accounts that have `role`. `index` must be a
-     * value between 0 and {getRoleMemberCount}, non-inclusive.
-     *
-     * Role bearers are not sorted in any particular way, and their ordering may
-     * change at any point.
-     *
-     * WARNING: When using {getRoleMember} and {getRoleMemberCount}, make sure
-     * you perform all queries on the same block. See the following
-     * https://forum.openzeppelin.com/t/iterating-over-elements-on-enumerableset-in-openzeppelin-contracts/2296[forum post]
-     * for more information.
-     */
-    function getRoleMember(bytes32 role, uint256 index) external view returns (address);
-
-    /**
-     * @dev Returns the number of accounts that have `role`. Can be used
-     * together with {getRoleMember} to enumerate all bearers of a role.
-     */
-    function getRoleMemberCount(bytes32 role) external view returns (uint256);
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
 }
 
 // File: @openzeppelin/contracts/utils/math/SignedMath.sol
@@ -1272,6 +865,151 @@ library Address {
     }
 }
 
+// File: @openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
+
+
+// OpenZeppelin Contracts (last updated v4.9.0) (token/ERC20/utils/SafeERC20.sol)
+
+pragma solidity ^0.8.0;
+
+
+
+
+/**
+ * @title SafeERC20
+ * @dev Wrappers around ERC20 operations that throw on failure (when the token
+ * contract returns false). Tokens that return no value (and instead revert or
+ * throw on failure) are also supported, non-reverting calls are assumed to be
+ * successful.
+ * To use this library you can add a `using SafeERC20 for IERC20;` statement to your contract,
+ * which allows you to call the safe operations as `token.safeTransfer(...)`, etc.
+ */
+library SafeERC20 {
+    using Address for address;
+
+    /**
+     * @dev Transfer `value` amount of `token` from the calling contract to `to`. If `token` returns no value,
+     * non-reverting calls are assumed to be successful.
+     */
+    function safeTransfer(IERC20 token, address to, uint256 value) internal {
+        _callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));
+    }
+
+    /**
+     * @dev Transfer `value` amount of `token` from `from` to `to`, spending the approval given by `from` to the
+     * calling contract. If `token` returns no value, non-reverting calls are assumed to be successful.
+     */
+    function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
+        _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
+    }
+
+    /**
+     * @dev Deprecated. This function has issues similar to the ones found in
+     * {IERC20-approve}, and its usage is discouraged.
+     *
+     * Whenever possible, use {safeIncreaseAllowance} and
+     * {safeDecreaseAllowance} instead.
+     */
+    function safeApprove(IERC20 token, address spender, uint256 value) internal {
+        // safeApprove should only be called when setting an initial allowance,
+        // or when resetting it to zero. To increase and decrease it, use
+        // 'safeIncreaseAllowance' and 'safeDecreaseAllowance'
+        require(
+            (value == 0) || (token.allowance(address(this), spender) == 0),
+            "SafeERC20: approve from non-zero to non-zero allowance"
+        );
+        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, value));
+    }
+
+    /**
+     * @dev Increase the calling contract's allowance toward `spender` by `value`. If `token` returns no value,
+     * non-reverting calls are assumed to be successful.
+     */
+    function safeIncreaseAllowance(IERC20 token, address spender, uint256 value) internal {
+        uint256 oldAllowance = token.allowance(address(this), spender);
+        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, oldAllowance + value));
+    }
+
+    /**
+     * @dev Decrease the calling contract's allowance toward `spender` by `value`. If `token` returns no value,
+     * non-reverting calls are assumed to be successful.
+     */
+    function safeDecreaseAllowance(IERC20 token, address spender, uint256 value) internal {
+        unchecked {
+            uint256 oldAllowance = token.allowance(address(this), spender);
+            require(oldAllowance >= value, "SafeERC20: decreased allowance below zero");
+            _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, oldAllowance - value));
+        }
+    }
+
+    /**
+     * @dev Set the calling contract's allowance toward `spender` to `value`. If `token` returns no value,
+     * non-reverting calls are assumed to be successful. Compatible with tokens that require the approval to be set to
+     * 0 before setting it to a non-zero value.
+     */
+    function forceApprove(IERC20 token, address spender, uint256 value) internal {
+        bytes memory approvalCall = abi.encodeWithSelector(token.approve.selector, spender, value);
+
+        if (!_callOptionalReturnBool(token, approvalCall)) {
+            _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, 0));
+            _callOptionalReturn(token, approvalCall);
+        }
+    }
+
+    /**
+     * @dev Use a ERC-2612 signature to set the `owner` approval toward `spender` on `token`.
+     * Revert on invalid signature.
+     */
+    function safePermit(
+        IERC20Permit token,
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal {
+        uint256 nonceBefore = token.nonces(owner);
+        token.permit(owner, spender, value, deadline, v, r, s);
+        uint256 nonceAfter = token.nonces(owner);
+        require(nonceAfter == nonceBefore + 1, "SafeERC20: permit did not succeed");
+    }
+
+    /**
+     * @dev Imitates a Solidity high-level call (i.e. a regular function call to a contract), relaxing the requirement
+     * on the return value: the return value is optional (but if data is returned, it must not be false).
+     * @param token The token targeted by the call.
+     * @param data The call data (encoded using abi.encode or one of its variants).
+     */
+    function _callOptionalReturn(IERC20 token, bytes memory data) private {
+        // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since
+        // we're implementing it ourselves. We use {Address-functionCall} to perform this call, which verifies that
+        // the target address contains contract code and also asserts for success in the low-level call.
+
+        bytes memory returndata = address(token).functionCall(data, "SafeERC20: low-level call failed");
+        require(returndata.length == 0 || abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
+    }
+
+    /**
+     * @dev Imitates a Solidity high-level call (i.e. a regular function call to a contract), relaxing the requirement
+     * on the return value: the return value is optional (but if data is returned, it must not be false).
+     * @param token The token targeted by the call.
+     * @param data The call data (encoded using abi.encode or one of its variants).
+     *
+     * This is a variant of {_callOptionalReturn} that silents catches all reverts and returns a bool instead.
+     */
+    function _callOptionalReturnBool(IERC20 token, bytes memory data) private returns (bool) {
+        // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since
+        // we're implementing it ourselves. We cannot use {Address-functionCall} here since this should return false
+        // and not revert is the subcall reverts.
+
+        (bool success, bytes memory returndata) = address(token).call(data);
+        return
+            success && (returndata.length == 0 || abi.decode(returndata, (bool))) && Address.isContract(address(token));
+    }
+}
+
 // File: @openzeppelin/contracts/token/ERC721/IERC721Receiver.sol
 
 
@@ -1495,37 +1233,6 @@ interface IERC721 is IERC165 {
     function isApprovedForAll(address owner, address operator) external view returns (bool);
 }
 
-// File: @openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol
-
-
-// OpenZeppelin Contracts (last updated v4.5.0) (token/ERC721/extensions/IERC721Enumerable.sol)
-
-pragma solidity ^0.8.0;
-
-
-/**
- * @title ERC-721 Non-Fungible Token Standard, optional enumeration extension
- * @dev See https://eips.ethereum.org/EIPS/eip-721
- */
-interface IERC721Enumerable is IERC721 {
-    /**
-     * @dev Returns the total amount of tokens stored by the contract.
-     */
-    function totalSupply() external view returns (uint256);
-
-    /**
-     * @dev Returns a token ID owned by `owner` at a given `index` of its token list.
-     * Use along with {balanceOf} to enumerate all of ``owner``'s tokens.
-     */
-    function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256);
-
-    /**
-     * @dev Returns a token ID at a given `index` of all the tokens stored by the contract.
-     * Use along with {totalSupply} to enumerate all tokens.
-     */
-    function tokenByIndex(uint256 index) external view returns (uint256);
-}
-
 // File: @openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol
 
 
@@ -1555,18 +1262,6 @@ interface IERC721Metadata is IERC721 {
     function tokenURI(uint256 tokenId) external view returns (string memory);
 }
 
-// File: utils/IERC721Batch.sol
-
-
-
-pragma solidity ^0.8.0;
-
-interface IERC721Batch {
-  function isOwnerOf( address account, uint[] calldata tokenIds ) external view returns( bool );
-  function transferBatch( address from, address to, uint[] calldata tokenIds, bytes calldata data ) external;
-  function walletOfOwner( address account ) external view returns( uint[] memory );
-}
-
 // File: @openzeppelin/contracts/utils/Context.sol
 
 
@@ -1594,260 +1289,10 @@ abstract contract Context {
     }
 }
 
-// File: @openzeppelin/contracts/access/AccessControl.sol
+// File: @openzeppelin/contracts/finance/PaymentSplitter.sol
 
 
-// OpenZeppelin Contracts (last updated v4.9.0) (access/AccessControl.sol)
-
-pragma solidity ^0.8.0;
-
-
-
-
-
-/**
- * @dev Contract module that allows children to implement role-based access
- * control mechanisms. This is a lightweight version that doesn't allow enumerating role
- * members except through off-chain means by accessing the contract event logs. Some
- * applications may benefit from on-chain enumerability, for those cases see
- * {AccessControlEnumerable}.
- *
- * Roles are referred to by their `bytes32` identifier. These should be exposed
- * in the external API and be unique. The best way to achieve this is by
- * using `public constant` hash digests:
- *
- * ```solidity
- * bytes32 public constant MY_ROLE = keccak256("MY_ROLE");
- * ```
- *
- * Roles can be used to represent a set of permissions. To restrict access to a
- * function call, use {hasRole}:
- *
- * ```solidity
- * function foo() public {
- *     require(hasRole(MY_ROLE, msg.sender));
- *     ...
- * }
- * ```
- *
- * Roles can be granted and revoked dynamically via the {grantRole} and
- * {revokeRole} functions. Each role has an associated admin role, and only
- * accounts that have a role's admin role can call {grantRole} and {revokeRole}.
- *
- * By default, the admin role for all roles is `DEFAULT_ADMIN_ROLE`, which means
- * that only accounts with this role will be able to grant or revoke other
- * roles. More complex role relationships can be created by using
- * {_setRoleAdmin}.
- *
- * WARNING: The `DEFAULT_ADMIN_ROLE` is also its own admin: it has permission to
- * grant and revoke this role. Extra precautions should be taken to secure
- * accounts that have been granted it. We recommend using {AccessControlDefaultAdminRules}
- * to enforce additional security measures for this role.
- */
-abstract contract AccessControl is Context, IAccessControl, ERC165 {
-    struct RoleData {
-        mapping(address => bool) members;
-        bytes32 adminRole;
-    }
-
-    mapping(bytes32 => RoleData) private _roles;
-
-    bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
-
-    /**
-     * @dev Modifier that checks that an account has a specific role. Reverts
-     * with a standardized message including the required role.
-     *
-     * The format of the revert reason is given by the following regular expression:
-     *
-     *  /^AccessControl: account (0x[0-9a-f]{40}) is missing role (0x[0-9a-f]{64})$/
-     *
-     * _Available since v4.1._
-     */
-    modifier onlyRole(bytes32 role) {
-        _checkRole(role);
-        _;
-    }
-
-    /**
-     * @dev See {IERC165-supportsInterface}.
-     */
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == type(IAccessControl).interfaceId || super.supportsInterface(interfaceId);
-    }
-
-    /**
-     * @dev Returns `true` if `account` has been granted `role`.
-     */
-    function hasRole(bytes32 role, address account) public view virtual override returns (bool) {
-        return _roles[role].members[account];
-    }
-
-    /**
-     * @dev Revert with a standard message if `_msgSender()` is missing `role`.
-     * Overriding this function changes the behavior of the {onlyRole} modifier.
-     *
-     * Format of the revert message is described in {_checkRole}.
-     *
-     * _Available since v4.6._
-     */
-    function _checkRole(bytes32 role) internal view virtual {
-        _checkRole(role, _msgSender());
-    }
-
-    /**
-     * @dev Revert with a standard message if `account` is missing `role`.
-     *
-     * The format of the revert reason is given by the following regular expression:
-     *
-     *  /^AccessControl: account (0x[0-9a-f]{40}) is missing role (0x[0-9a-f]{64})$/
-     */
-    function _checkRole(bytes32 role, address account) internal view virtual {
-        if (!hasRole(role, account)) {
-            revert(
-                string(
-                    abi.encodePacked(
-                        "AccessControl: account ",
-                        Strings.toHexString(account),
-                        " is missing role ",
-                        Strings.toHexString(uint256(role), 32)
-                    )
-                )
-            );
-        }
-    }
-
-    /**
-     * @dev Returns the admin role that controls `role`. See {grantRole} and
-     * {revokeRole}.
-     *
-     * To change a role's admin, use {_setRoleAdmin}.
-     */
-    function getRoleAdmin(bytes32 role) public view virtual override returns (bytes32) {
-        return _roles[role].adminRole;
-    }
-
-    /**
-     * @dev Grants `role` to `account`.
-     *
-     * If `account` had not been already granted `role`, emits a {RoleGranted}
-     * event.
-     *
-     * Requirements:
-     *
-     * - the caller must have ``role``'s admin role.
-     *
-     * May emit a {RoleGranted} event.
-     */
-    function grantRole(bytes32 role, address account) public virtual override onlyRole(getRoleAdmin(role)) {
-        _grantRole(role, account);
-    }
-
-    /**
-     * @dev Revokes `role` from `account`.
-     *
-     * If `account` had been granted `role`, emits a {RoleRevoked} event.
-     *
-     * Requirements:
-     *
-     * - the caller must have ``role``'s admin role.
-     *
-     * May emit a {RoleRevoked} event.
-     */
-    function revokeRole(bytes32 role, address account) public virtual override onlyRole(getRoleAdmin(role)) {
-        _revokeRole(role, account);
-    }
-
-    /**
-     * @dev Revokes `role` from the calling account.
-     *
-     * Roles are often managed via {grantRole} and {revokeRole}: this function's
-     * purpose is to provide a mechanism for accounts to lose their privileges
-     * if they are compromised (such as when a trusted device is misplaced).
-     *
-     * If the calling account had been revoked `role`, emits a {RoleRevoked}
-     * event.
-     *
-     * Requirements:
-     *
-     * - the caller must be `account`.
-     *
-     * May emit a {RoleRevoked} event.
-     */
-    function renounceRole(bytes32 role, address account) public virtual override {
-        require(account == _msgSender(), "AccessControl: can only renounce roles for self");
-
-        _revokeRole(role, account);
-    }
-
-    /**
-     * @dev Grants `role` to `account`.
-     *
-     * If `account` had not been already granted `role`, emits a {RoleGranted}
-     * event. Note that unlike {grantRole}, this function doesn't perform any
-     * checks on the calling account.
-     *
-     * May emit a {RoleGranted} event.
-     *
-     * [WARNING]
-     * ====
-     * This function should only be called from the constructor when setting
-     * up the initial roles for the system.
-     *
-     * Using this function in any other way is effectively circumventing the admin
-     * system imposed by {AccessControl}.
-     * ====
-     *
-     * NOTE: This function is deprecated in favor of {_grantRole}.
-     */
-    function _setupRole(bytes32 role, address account) internal virtual {
-        _grantRole(role, account);
-    }
-
-    /**
-     * @dev Sets `adminRole` as ``role``'s admin role.
-     *
-     * Emits a {RoleAdminChanged} event.
-     */
-    function _setRoleAdmin(bytes32 role, bytes32 adminRole) internal virtual {
-        bytes32 previousAdminRole = getRoleAdmin(role);
-        _roles[role].adminRole = adminRole;
-        emit RoleAdminChanged(role, previousAdminRole, adminRole);
-    }
-
-    /**
-     * @dev Grants `role` to `account`.
-     *
-     * Internal function without access restriction.
-     *
-     * May emit a {RoleGranted} event.
-     */
-    function _grantRole(bytes32 role, address account) internal virtual {
-        if (!hasRole(role, account)) {
-            _roles[role].members[account] = true;
-            emit RoleGranted(role, account, _msgSender());
-        }
-    }
-
-    /**
-     * @dev Revokes `role` from `account`.
-     *
-     * Internal function without access restriction.
-     *
-     * May emit a {RoleRevoked} event.
-     */
-    function _revokeRole(bytes32 role, address account) internal virtual {
-        if (hasRole(role, account)) {
-            _roles[role].members[account] = false;
-            emit RoleRevoked(role, account, _msgSender());
-        }
-    }
-}
-
-// File: @openzeppelin/contracts/access/AccessControlEnumerable.sol
-
-
-// OpenZeppelin Contracts (last updated v4.5.0) (access/AccessControlEnumerable.sol)
+// OpenZeppelin Contracts (last updated v4.8.0) (finance/PaymentSplitter.sol)
 
 pragma solidity ^0.8.0;
 
@@ -1855,165 +1300,208 @@ pragma solidity ^0.8.0;
 
 
 /**
- * @dev Extension of {AccessControl} that allows enumerating the members of each role.
- */
-abstract contract AccessControlEnumerable is IAccessControlEnumerable, AccessControl {
-    using EnumerableSet for EnumerableSet.AddressSet;
-
-    mapping(bytes32 => EnumerableSet.AddressSet) private _roleMembers;
-
-    /**
-     * @dev See {IERC165-supportsInterface}.
-     */
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == type(IAccessControlEnumerable).interfaceId || super.supportsInterface(interfaceId);
-    }
-
-    /**
-     * @dev Returns one of the accounts that have `role`. `index` must be a
-     * value between 0 and {getRoleMemberCount}, non-inclusive.
-     *
-     * Role bearers are not sorted in any particular way, and their ordering may
-     * change at any point.
-     *
-     * WARNING: When using {getRoleMember} and {getRoleMemberCount}, make sure
-     * you perform all queries on the same block. See the following
-     * https://forum.openzeppelin.com/t/iterating-over-elements-on-enumerableset-in-openzeppelin-contracts/2296[forum post]
-     * for more information.
-     */
-    function getRoleMember(bytes32 role, uint256 index) public view virtual override returns (address) {
-        return _roleMembers[role].at(index);
-    }
-
-    /**
-     * @dev Returns the number of accounts that have `role`. Can be used
-     * together with {getRoleMember} to enumerate all bearers of a role.
-     */
-    function getRoleMemberCount(bytes32 role) public view virtual override returns (uint256) {
-        return _roleMembers[role].length();
-    }
-
-    /**
-     * @dev Overload {_grantRole} to track enumerable memberships
-     */
-    function _grantRole(bytes32 role, address account) internal virtual override {
-        super._grantRole(role, account);
-        _roleMembers[role].add(account);
-    }
-
-    /**
-     * @dev Overload {_revokeRole} to track enumerable memberships
-     */
-    function _revokeRole(bytes32 role, address account) internal virtual override {
-        super._revokeRole(role, account);
-        _roleMembers[role].remove(account);
-    }
-}
-
-// File: @openzeppelin/contracts/security/Pausable.sol
-
-
-// OpenZeppelin Contracts (last updated v4.7.0) (security/Pausable.sol)
-
-pragma solidity ^0.8.0;
-
-
-/**
- * @dev Contract module which allows children to implement an emergency stop
- * mechanism that can be triggered by an authorized account.
+ * @title PaymentSplitter
+ * @dev This contract allows to split Ether payments among a group of accounts. The sender does not need to be aware
+ * that the Ether will be split in this way, since it is handled transparently by the contract.
  *
- * This module is used through inheritance. It will make available the
- * modifiers `whenNotPaused` and `whenPaused`, which can be applied to
- * the functions of your contract. Note that they will not be pausable by
- * simply including this module, only once the modifiers are put in place.
+ * The split can be in equal parts or in any other arbitrary proportion. The way this is specified is by assigning each
+ * account to a number of shares. Of all the Ether that this contract receives, each account will then be able to claim
+ * an amount proportional to the percentage of total shares they were assigned. The distribution of shares is set at the
+ * time of contract deployment and can't be updated thereafter.
+ *
+ * `PaymentSplitter` follows a _pull payment_ model. This means that payments are not automatically forwarded to the
+ * accounts but kept in this contract, and the actual transfer is triggered as a separate step by calling the {release}
+ * function.
+ *
+ * NOTE: This contract assumes that ERC20 tokens will behave similarly to native tokens (Ether). Rebasing tokens, and
+ * tokens that apply fees during transfers, are likely to not be supported as expected. If in doubt, we encourage you
+ * to run tests before sending real value to this contract.
  */
-abstract contract Pausable is Context {
-    /**
-     * @dev Emitted when the pause is triggered by `account`.
-     */
-    event Paused(address account);
+contract PaymentSplitter is Context {
+    event PayeeAdded(address account, uint256 shares);
+    event PaymentReleased(address to, uint256 amount);
+    event ERC20PaymentReleased(IERC20 indexed token, address to, uint256 amount);
+    event PaymentReceived(address from, uint256 amount);
+
+    uint256 private _totalShares;
+    uint256 private _totalReleased;
+
+    mapping(address => uint256) private _shares;
+    mapping(address => uint256) private _released;
+    address[] private _payees;
+
+    mapping(IERC20 => uint256) private _erc20TotalReleased;
+    mapping(IERC20 => mapping(address => uint256)) private _erc20Released;
 
     /**
-     * @dev Emitted when the pause is lifted by `account`.
+     * @dev Creates an instance of `PaymentSplitter` where each account in `payees` is assigned the number of shares at
+     * the matching position in the `shares` array.
+     *
+     * All addresses in `payees` must be non-zero. Both arrays must have the same non-zero length, and there must be no
+     * duplicates in `payees`.
      */
-    event Unpaused(address account);
+    constructor(address[] memory payees, uint256[] memory shares_) payable {
+        require(payees.length == shares_.length, "PaymentSplitter: payees and shares length mismatch");
+        require(payees.length > 0, "PaymentSplitter: no payees");
 
-    bool private _paused;
-
-    /**
-     * @dev Initializes the contract in unpaused state.
-     */
-    constructor() {
-        _paused = false;
+        for (uint256 i = 0; i < payees.length; i++) {
+            _addPayee(payees[i], shares_[i]);
+        }
     }
 
     /**
-     * @dev Modifier to make a function callable only when the contract is not paused.
+     * @dev The Ether received will be logged with {PaymentReceived} events. Note that these events are not fully
+     * reliable: it's possible for a contract to receive Ether without triggering this function. This only affects the
+     * reliability of the events, and not the actual splitting of Ether.
      *
-     * Requirements:
-     *
-     * - The contract must not be paused.
+     * To learn more about this see the Solidity documentation for
+     * https://solidity.readthedocs.io/en/latest/contracts.html#fallback-function[fallback
+     * functions].
      */
-    modifier whenNotPaused() {
-        _requireNotPaused();
-        _;
+    receive() external payable virtual {
+        emit PaymentReceived(_msgSender(), msg.value);
     }
 
     /**
-     * @dev Modifier to make a function callable only when the contract is paused.
-     *
-     * Requirements:
-     *
-     * - The contract must be paused.
+     * @dev Getter for the total shares held by payees.
      */
-    modifier whenPaused() {
-        _requirePaused();
-        _;
+    function totalShares() public view returns (uint256) {
+        return _totalShares;
     }
 
     /**
-     * @dev Returns true if the contract is paused, and false otherwise.
+     * @dev Getter for the total amount of Ether already released.
      */
-    function paused() public view virtual returns (bool) {
-        return _paused;
+    function totalReleased() public view returns (uint256) {
+        return _totalReleased;
     }
 
     /**
-     * @dev Throws if the contract is paused.
+     * @dev Getter for the total amount of `token` already released. `token` should be the address of an IERC20
+     * contract.
      */
-    function _requireNotPaused() internal view virtual {
-        require(!paused(), "Pausable: paused");
+    function totalReleased(IERC20 token) public view returns (uint256) {
+        return _erc20TotalReleased[token];
     }
 
     /**
-     * @dev Throws if the contract is not paused.
+     * @dev Getter for the amount of shares held by an account.
      */
-    function _requirePaused() internal view virtual {
-        require(paused(), "Pausable: not paused");
+    function shares(address account) public view returns (uint256) {
+        return _shares[account];
     }
 
     /**
-     * @dev Triggers stopped state.
-     *
-     * Requirements:
-     *
-     * - The contract must not be paused.
+     * @dev Getter for the amount of Ether already released to a payee.
      */
-    function _pause() internal virtual whenNotPaused {
-        _paused = true;
-        emit Paused(_msgSender());
+    function released(address account) public view returns (uint256) {
+        return _released[account];
     }
 
     /**
-     * @dev Returns to normal state.
-     *
-     * Requirements:
-     *
-     * - The contract must be paused.
+     * @dev Getter for the amount of `token` tokens already released to a payee. `token` should be the address of an
+     * IERC20 contract.
      */
-    function _unpause() internal virtual whenPaused {
-        _paused = false;
-        emit Unpaused(_msgSender());
+    function released(IERC20 token, address account) public view returns (uint256) {
+        return _erc20Released[token][account];
+    }
+
+    /**
+     * @dev Getter for the address of the payee number `index`.
+     */
+    function payee(uint256 index) public view returns (address) {
+        return _payees[index];
+    }
+
+    /**
+     * @dev Getter for the amount of payee's releasable Ether.
+     */
+    function releasable(address account) public view returns (uint256) {
+        uint256 totalReceived = address(this).balance + totalReleased();
+        return _pendingPayment(account, totalReceived, released(account));
+    }
+
+    /**
+     * @dev Getter for the amount of payee's releasable `token` tokens. `token` should be the address of an
+     * IERC20 contract.
+     */
+    function releasable(IERC20 token, address account) public view returns (uint256) {
+        uint256 totalReceived = token.balanceOf(address(this)) + totalReleased(token);
+        return _pendingPayment(account, totalReceived, released(token, account));
+    }
+
+    /**
+     * @dev Triggers a transfer to `account` of the amount of Ether they are owed, according to their percentage of the
+     * total shares and their previous withdrawals.
+     */
+    function release(address payable account) public virtual {
+        require(_shares[account] > 0, "PaymentSplitter: account has no shares");
+
+        uint256 payment = releasable(account);
+
+        require(payment != 0, "PaymentSplitter: account is not due payment");
+
+        // _totalReleased is the sum of all values in _released.
+        // If "_totalReleased += payment" does not overflow, then "_released[account] += payment" cannot overflow.
+        _totalReleased += payment;
+        unchecked {
+            _released[account] += payment;
+        }
+
+        Address.sendValue(account, payment);
+        emit PaymentReleased(account, payment);
+    }
+
+    /**
+     * @dev Triggers a transfer to `account` of the amount of `token` tokens they are owed, according to their
+     * percentage of the total shares and their previous withdrawals. `token` must be the address of an IERC20
+     * contract.
+     */
+    function release(IERC20 token, address account) public virtual {
+        require(_shares[account] > 0, "PaymentSplitter: account has no shares");
+
+        uint256 payment = releasable(token, account);
+
+        require(payment != 0, "PaymentSplitter: account is not due payment");
+
+        // _erc20TotalReleased[token] is the sum of all values in _erc20Released[token].
+        // If "_erc20TotalReleased[token] += payment" does not overflow, then "_erc20Released[token][account] += payment"
+        // cannot overflow.
+        _erc20TotalReleased[token] += payment;
+        unchecked {
+            _erc20Released[token][account] += payment;
+        }
+
+        SafeERC20.safeTransfer(token, account, payment);
+        emit ERC20PaymentReleased(token, account, payment);
+    }
+
+    /**
+     * @dev internal logic for computing the pending payment of an `account` given the token historical balances and
+     * already released amounts.
+     */
+    function _pendingPayment(
+        address account,
+        uint256 totalReceived,
+        uint256 alreadyReleased
+    ) private view returns (uint256) {
+        return (totalReceived * _shares[account]) / _totalShares - alreadyReleased;
+    }
+
+    /**
+     * @dev Add a new payee to the contract.
+     * @param account The address of the payee to add.
+     * @param shares_ The number of shares owned by the payee.
+     */
+    function _addPayee(address account, uint256 shares_) private {
+        require(account != address(0), "PaymentSplitter: account is the zero address");
+        require(shares_ > 0, "PaymentSplitter: shares are 0");
+        require(_shares[account] == 0, "PaymentSplitter: account already has shares");
+
+        _payees.push(account);
+        _shares[account] = shares_;
+        _totalShares = _totalShares + shares_;
+        emit PayeeAdded(account, shares_);
     }
 }
 
@@ -2485,669 +1973,6 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
     }
 }
 
-// File: @openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol
-
-
-// OpenZeppelin Contracts (last updated v4.8.2) (token/ERC721/extensions/ERC721Pausable.sol)
-
-pragma solidity ^0.8.0;
-
-
-
-/**
- * @dev ERC721 token with pausable token transfers, minting and burning.
- *
- * Useful for scenarios such as preventing trades until the end of an evaluation
- * period, or having an emergency switch for freezing all token transfers in the
- * event of a large bug.
- *
- * IMPORTANT: This contract does not include public pause and unpause functions. In
- * addition to inheriting this contract, you must define both functions, invoking the
- * {Pausable-_pause} and {Pausable-_unpause} internal functions, with appropriate
- * access control, e.g. using {AccessControl} or {Ownable}. Not doing so will
- * make the contract unpausable.
- */
-abstract contract ERC721Pausable is ERC721, Pausable {
-    /**
-     * @dev See {ERC721-_beforeTokenTransfer}.
-     *
-     * Requirements:
-     *
-     * - the contract must not be paused.
-     */
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 firstTokenId,
-        uint256 batchSize
-    ) internal virtual override {
-        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
-
-        require(!paused(), "ERC721Pausable: token transfer while paused");
-    }
-}
-
-// File: @openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol
-
-
-// OpenZeppelin Contracts (last updated v4.8.0) (token/ERC721/extensions/ERC721Burnable.sol)
-
-pragma solidity ^0.8.0;
-
-
-
-/**
- * @title ERC721 Burnable Token
- * @dev ERC721 Token that can be burned (destroyed).
- */
-abstract contract ERC721Burnable is Context, ERC721 {
-    /**
-     * @dev Burns `tokenId`. See {ERC721-_burn}.
-     *
-     * Requirements:
-     *
-     * - The caller must own `tokenId` or be an approved operator.
-     */
-    function burn(uint256 tokenId) public virtual {
-        //solhint-disable-next-line max-line-length
-        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: caller is not token owner or approved");
-        _burn(tokenId);
-    }
-}
-
-// File: @openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol
-
-
-// OpenZeppelin Contracts (last updated v4.8.0) (token/ERC721/extensions/ERC721Enumerable.sol)
-
-pragma solidity ^0.8.0;
-
-
-
-/**
- * @dev This implements an optional extension of {ERC721} defined in the EIP that adds
- * enumerability of all the token ids in the contract as well as all token ids owned by each
- * account.
- */
-abstract contract ERC721Enumerable is ERC721, IERC721Enumerable {
-    // Mapping from owner to list of owned token IDs
-    mapping(address => mapping(uint256 => uint256)) private _ownedTokens;
-
-    // Mapping from token ID to index of the owner tokens list
-    mapping(uint256 => uint256) private _ownedTokensIndex;
-
-    // Array with all token ids, used for enumeration
-    uint256[] private _allTokens;
-
-    // Mapping from token id to position in the allTokens array
-    mapping(uint256 => uint256) private _allTokensIndex;
-
-    /**
-     * @dev See {IERC165-supportsInterface}.
-     */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, ERC721) returns (bool) {
-        return interfaceId == type(IERC721Enumerable).interfaceId || super.supportsInterface(interfaceId);
-    }
-
-    /**
-     * @dev See {IERC721Enumerable-tokenOfOwnerByIndex}.
-     */
-    function tokenOfOwnerByIndex(address owner, uint256 index) public view virtual override returns (uint256) {
-        require(index < ERC721.balanceOf(owner), "ERC721Enumerable: owner index out of bounds");
-        return _ownedTokens[owner][index];
-    }
-
-    /**
-     * @dev See {IERC721Enumerable-totalSupply}.
-     */
-    function totalSupply() public view virtual override returns (uint256) {
-        return _allTokens.length;
-    }
-
-    /**
-     * @dev See {IERC721Enumerable-tokenByIndex}.
-     */
-    function tokenByIndex(uint256 index) public view virtual override returns (uint256) {
-        require(index < ERC721Enumerable.totalSupply(), "ERC721Enumerable: global index out of bounds");
-        return _allTokens[index];
-    }
-
-    /**
-     * @dev See {ERC721-_beforeTokenTransfer}.
-     */
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 firstTokenId,
-        uint256 batchSize
-    ) internal virtual override {
-        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
-
-        if (batchSize > 1) {
-            // Will only trigger during construction. Batch transferring (minting) is not available afterwards.
-            revert("ERC721Enumerable: consecutive transfers not supported");
-        }
-
-        uint256 tokenId = firstTokenId;
-
-        if (from == address(0)) {
-            _addTokenToAllTokensEnumeration(tokenId);
-        } else if (from != to) {
-            _removeTokenFromOwnerEnumeration(from, tokenId);
-        }
-        if (to == address(0)) {
-            _removeTokenFromAllTokensEnumeration(tokenId);
-        } else if (to != from) {
-            _addTokenToOwnerEnumeration(to, tokenId);
-        }
-    }
-
-    /**
-     * @dev Private function to add a token to this extension's ownership-tracking data structures.
-     * @param to address representing the new owner of the given token ID
-     * @param tokenId uint256 ID of the token to be added to the tokens list of the given address
-     */
-    function _addTokenToOwnerEnumeration(address to, uint256 tokenId) private {
-        uint256 length = ERC721.balanceOf(to);
-        _ownedTokens[to][length] = tokenId;
-        _ownedTokensIndex[tokenId] = length;
-    }
-
-    /**
-     * @dev Private function to add a token to this extension's token tracking data structures.
-     * @param tokenId uint256 ID of the token to be added to the tokens list
-     */
-    function _addTokenToAllTokensEnumeration(uint256 tokenId) private {
-        _allTokensIndex[tokenId] = _allTokens.length;
-        _allTokens.push(tokenId);
-    }
-
-    /**
-     * @dev Private function to remove a token from this extension's ownership-tracking data structures. Note that
-     * while the token is not assigned a new owner, the `_ownedTokensIndex` mapping is _not_ updated: this allows for
-     * gas optimizations e.g. when performing a transfer operation (avoiding double writes).
-     * This has O(1) time complexity, but alters the order of the _ownedTokens array.
-     * @param from address representing the previous owner of the given token ID
-     * @param tokenId uint256 ID of the token to be removed from the tokens list of the given address
-     */
-    function _removeTokenFromOwnerEnumeration(address from, uint256 tokenId) private {
-        // To prevent a gap in from's tokens array, we store the last token in the index of the token to delete, and
-        // then delete the last slot (swap and pop).
-
-        uint256 lastTokenIndex = ERC721.balanceOf(from) - 1;
-        uint256 tokenIndex = _ownedTokensIndex[tokenId];
-
-        // When the token to delete is the last token, the swap operation is unnecessary
-        if (tokenIndex != lastTokenIndex) {
-            uint256 lastTokenId = _ownedTokens[from][lastTokenIndex];
-
-            _ownedTokens[from][tokenIndex] = lastTokenId; // Move the last token to the slot of the to-delete token
-            _ownedTokensIndex[lastTokenId] = tokenIndex; // Update the moved token's index
-        }
-
-        // This also deletes the contents at the last position of the array
-        delete _ownedTokensIndex[tokenId];
-        delete _ownedTokens[from][lastTokenIndex];
-    }
-
-    /**
-     * @dev Private function to remove a token from this extension's token tracking data structures.
-     * This has O(1) time complexity, but alters the order of the _allTokens array.
-     * @param tokenId uint256 ID of the token to be removed from the tokens list
-     */
-    function _removeTokenFromAllTokensEnumeration(uint256 tokenId) private {
-        // To prevent a gap in the tokens array, we store the last token in the index of the token to delete, and
-        // then delete the last slot (swap and pop).
-
-        uint256 lastTokenIndex = _allTokens.length - 1;
-        uint256 tokenIndex = _allTokensIndex[tokenId];
-
-        // When the token to delete is the last token, the swap operation is unnecessary. However, since this occurs so
-        // rarely (when the last minted token is burnt) that we still do the swap here to avoid the gas cost of adding
-        // an 'if' statement (like in _removeTokenFromOwnerEnumeration)
-        uint256 lastTokenId = _allTokens[lastTokenIndex];
-
-        _allTokens[tokenIndex] = lastTokenId; // Move the last token to the slot of the to-delete token
-        _allTokensIndex[lastTokenId] = tokenIndex; // Update the moved token's index
-
-        // This also deletes the contents at the last position of the array
-        delete _allTokensIndex[tokenId];
-        _allTokens.pop();
-    }
-}
-
-// File: @openzeppelin/contracts/token/ERC721/presets/ERC721PresetMinterPauserAutoId.sol
-
-
-// OpenZeppelin Contracts (last updated v4.9.0) (token/ERC721/presets/ERC721PresetMinterPauserAutoId.sol)
-
-pragma solidity ^0.8.0;
-
-
-
-
-
-
-
-
-/**
- * @dev {ERC721} token, including:
- *
- *  - ability for holders to burn (destroy) their tokens
- *  - a minter role that allows for token minting (creation)
- *  - a pauser role that allows to stop all token transfers
- *  - token ID and URI autogeneration
- *
- * This contract uses {AccessControl} to lock permissioned functions using the
- * different roles - head to its documentation for details.
- *
- * The account that deploys the contract will be granted the minter and pauser
- * roles, as well as the default admin role, which will let it grant both minter
- * and pauser roles to other accounts.
- *
- * _Deprecated in favor of https://wizard.openzeppelin.com/[Contracts Wizard]._
- */
-contract ERC721PresetMinterPauserAutoId is
-    Context,
-    AccessControlEnumerable,
-    ERC721Enumerable,
-    ERC721Burnable,
-    ERC721Pausable
-{
-    using Counters for Counters.Counter;
-
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
-
-    Counters.Counter private _tokenIdTracker;
-
-    string private _baseTokenURI;
-
-    /**
-     * @dev Grants `DEFAULT_ADMIN_ROLE`, `MINTER_ROLE` and `PAUSER_ROLE` to the
-     * account that deploys the contract.
-     *
-     * Token URIs will be autogenerated based on `baseURI` and their token IDs.
-     * See {ERC721-tokenURI}.
-     */
-    constructor(string memory name, string memory symbol, string memory baseTokenURI) ERC721(name, symbol) {
-        _baseTokenURI = baseTokenURI;
-
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-
-        _setupRole(MINTER_ROLE, _msgSender());
-        _setupRole(PAUSER_ROLE, _msgSender());
-    }
-
-    function _baseURI() internal view virtual override returns (string memory) {
-        return _baseTokenURI;
-    }
-
-    /**
-     * @dev Creates a new token for `to`. Its token ID will be automatically
-     * assigned (and available on the emitted {IERC721-Transfer} event), and the token
-     * URI autogenerated based on the base URI passed at construction.
-     *
-     * See {ERC721-_mint}.
-     *
-     * Requirements:
-     *
-     * - the caller must have the `MINTER_ROLE`.
-     */
-    function mint(address to) public virtual {
-        require(hasRole(MINTER_ROLE, _msgSender()), "ERC721PresetMinterPauserAutoId: must have minter role to mint");
-
-        // We cannot just use balanceOf to create the new tokenId because tokens
-        // can be burned (destroyed), so we need a separate counter.
-        _mint(to, _tokenIdTracker.current());
-        _tokenIdTracker.increment();
-    }
-
-    /**
-     * @dev Pauses all token transfers.
-     *
-     * See {ERC721Pausable} and {Pausable-_pause}.
-     *
-     * Requirements:
-     *
-     * - the caller must have the `PAUSER_ROLE`.
-     */
-    function pause() public virtual {
-        require(hasRole(PAUSER_ROLE, _msgSender()), "ERC721PresetMinterPauserAutoId: must have pauser role to pause");
-        _pause();
-    }
-
-    /**
-     * @dev Unpauses all token transfers.
-     *
-     * See {ERC721Pausable} and {Pausable-_unpause}.
-     *
-     * Requirements:
-     *
-     * - the caller must have the `PAUSER_ROLE`.
-     */
-    function unpause() public virtual {
-        require(hasRole(PAUSER_ROLE, _msgSender()), "ERC721PresetMinterPauserAutoId: must have pauser role to unpause");
-        _unpause();
-    }
-
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 firstTokenId,
-        uint256 batchSize
-    ) internal virtual override(ERC721, ERC721Enumerable, ERC721Pausable) {
-        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
-    }
-
-    /**
-     * @dev See {IERC165-supportsInterface}.
-     */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(AccessControlEnumerable, ERC721, ERC721Enumerable) returns (bool) {
-        return super.supportsInterface(interfaceId);
-    }
-}
-
-// File: utils/ERC721B.sol
-
-
-
-pragma solidity ^0.8.0;
-
-abstract contract ERC721B is Context, ERC165, IERC721, IERC721Metadata {
-    using Address for address;
-
-    string private _name;
-    string private _symbol;
-
-    uint internal _burned;
-    uint internal _offset;
-    address[] internal _owners;
-
-    mapping(uint => address) internal _tokenApprovals;
-    mapping(address => mapping(address => bool)) private _operatorApprovals;
-
-    constructor(string memory name_, string memory symbol_, uint offset) {
-        _name = name_;
-        _symbol = symbol_;
-        _offset = offset;
-        for(uint i; i < _offset; ++i ){
-            _owners.push(address(0));
-        }
-    }
-
-    //public
-    function balanceOf(address owner) public view virtual override returns (uint) {
-        require(owner != address(0), "ERC721: balance query for the zero address");
-
-        uint count;
-        for( uint i; i < _owners.length; ++i ){
-          if( owner == _owners[i] )
-            ++count;
-        }
-        return count;
-    }
-
-    function name() external view virtual override returns (string memory) {
-        return _name;
-    }
-
-    function ownerOf(uint tokenId) public view virtual override returns (address) {
-        address owner = _owners[tokenId];
-        require(owner != address(0), "ERC721: owner query for nonexistent token");
-        return owner;
-    }
-
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
-        return
-            interfaceId == type(IERC721).interfaceId ||
-            interfaceId == type(IERC721Metadata).interfaceId ||
-            super.supportsInterface(interfaceId);
-    }
-
-    function symbol() external view virtual override returns (string memory) {
-        return _symbol;
-    }
-
-    function totalSupply() public view virtual returns (uint) {
-        return _owners.length - (_offset + _burned);
-    }
-
-
-    function approve(address to, uint tokenId) external virtual override {
-        address owner = ERC721B.ownerOf(tokenId);
-        require(to != owner, "ERC721: approval to current owner");
-
-        require(
-            _msgSender() == owner || isApprovedForAll(owner, _msgSender()),
-            "ERC721: approve caller is not owner nor approved for all"
-        );
-
-        _approve(to, tokenId);
-    }
-
-    function getApproved(uint tokenId) public view virtual override returns (address) {
-        require(_exists(tokenId), "ERC721: approved query for nonexistent token");
-        return _tokenApprovals[tokenId];
-    }
-
-    function isApprovedForAll(address owner, address operator) public view virtual override returns (bool) {
-        return _operatorApprovals[owner][operator];
-    }
-
-    function setApprovalForAll(address operator, bool approved) external virtual override {
-        require(operator != _msgSender(), "ERC721: approve to caller");
-        _operatorApprovals[_msgSender()][operator] = approved;
-        emit ApprovalForAll(_msgSender(), operator, approved);
-    }
-
-    function transferFrom(
-        address from,
-        address to,
-        uint tokenId
-    ) public virtual override {
-        //solhint-disable-next-line max-line-length
-        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
-        _transfer(from, to, tokenId);
-    }
-
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint tokenId
-    ) external virtual override {
-        safeTransferFrom(from, to, tokenId, "");
-    }
-
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint tokenId,
-        bytes memory _data
-    ) public virtual override {
-        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
-        _safeTransfer(from, to, tokenId, _data);
-    }
-
-
-    //internal
-    function _approve(address to, uint tokenId) internal virtual {
-        _tokenApprovals[tokenId] = to;
-        emit Approval(ERC721B.ownerOf(tokenId), to, tokenId);
-    }
-
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint tokenId
-    ) internal virtual {}
-
-    function _burn(uint tokenId) internal virtual {
-        address owner = ERC721B.ownerOf(tokenId);
-
-        _beforeTokenTransfer(owner, address(0), tokenId);
-
-        // Clear approvals
-        _approve(address(0), tokenId);
-        _owners[tokenId] = address(0);
-
-        emit Transfer(owner, address(0), tokenId);
-    }
-
-    function _checkOnERC721Received(
-        address from,
-        address to,
-        uint tokenId,
-        bytes memory _data
-    ) private returns (bool) {
-        if (to.isContract()) {
-            try IERC721Receiver(to).onERC721Received(_msgSender(), from, tokenId, _data) returns (bytes4 retval) {
-                return retval == IERC721Receiver.onERC721Received.selector;
-            } catch (bytes memory reason) {
-                if (reason.length == 0) {
-                    revert("ERC721: transfer to non ERC721Receiver implementer");
-                } else {
-                    assembly {
-                        revert(add(32, reason), mload(reason))
-                    }
-                }
-            }
-        } else {
-            return true;
-        }
-    }
-
-    function _exists(uint tokenId) internal view virtual returns (bool) {
-        return tokenId < _owners.length && _owners[tokenId] != address(0);
-    }
-
-    function _isApprovedOrOwner(address spender, uint tokenId) internal view virtual returns (bool) {
-        require(_exists(tokenId), "ERC721: operator query for nonexistent token");
-        address owner = ERC721B.ownerOf(tokenId);
-        return (spender == owner || getApproved(tokenId) == spender || isApprovedForAll(owner, spender));
-    }
-
-    function _mint(address to, uint tokenId) internal virtual {
-        require(to != address(0), "ERC721: mint to the zero address");
-        require(!_exists(tokenId), "ERC721: token already minted");
-
-        _beforeTokenTransfer(address(0), to, tokenId);
-        _owners.push(to);
-
-        emit Transfer(address(0), to, tokenId);
-    }
-
-    function _next() internal view virtual returns( uint ){
-        return _owners.length;
-    }
-
-    function _safeMint(address to, uint tokenId) internal virtual {
-        _safeMint(to, tokenId, "");
-    }
-
-    function _safeMint(
-        address to,
-        uint tokenId,
-        bytes memory _data
-    ) internal virtual {
-        _mint(to, tokenId);
-        require(
-            _checkOnERC721Received(address(0), to, tokenId, _data),
-            "ERC721: transfer to non ERC721Receiver implementer"
-        );
-    }
-
-    function _safeTransfer(
-        address from,
-        address to,
-        uint tokenId,
-        bytes memory _data
-    ) internal virtual {
-        _transfer(from, to, tokenId);
-        require(_checkOnERC721Received(from, to, tokenId, _data), "ERC721: transfer to non ERC721Receiver implementer");
-    }
-
-    function _transfer(
-        address from,
-        address to,
-        uint tokenId
-    ) internal virtual {
-        require(ERC721B.ownerOf(tokenId) == from, "ERC721: transfer of token that is not own");
-        require(to != address(0), "ERC721: transfer to the zero address");
-
-        _beforeTokenTransfer(from, to, tokenId);
-
-        // Clear approvals from the previous owner
-        _approve(address(0), tokenId);
-        _owners[tokenId] = to;
-
-        emit Transfer(from, to, tokenId);
-    }
-}
-
-// File: utils/ERC721EnumerableLite.sol
-
-
-
-pragma solidity ^0.8.0;
-
-abstract contract ERC721EnumerableLite is ERC721B, IERC721Batch, IERC721Enumerable {
-    mapping(address => uint) internal _balances;
-
-    function isOwnerOf( address account, uint[] calldata tokenIds ) external view virtual override returns( bool ){
-        for(uint i; i < tokenIds.length; ++i ){
-            if( _owners[ tokenIds[i] ] != account )
-                return false;
-        }
-
-        return true;
-    }
-
-    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, ERC721B) returns (bool) {
-        return interfaceId == type(IERC721Enumerable).interfaceId || super.supportsInterface(interfaceId);
-    }
-
-    function tokenOfOwnerByIndex(address owner, uint index) public view override returns (uint tokenId) {
-        uint count;
-        for( uint i; i < _owners.length; ++i ){
-            if( owner == _owners[i] ){
-                if( count == index )
-                    return i;
-                else
-                    ++count;
-            }
-        }
-
-        revert("ERC721Enumerable: owner index out of bounds");
-    }
-
-    function tokenByIndex(uint index) external view virtual override returns (uint) {
-        require(index < totalSupply(), "ERC721Enumerable: global index out of bounds");
-        return index;
-    }
-
-    function totalSupply() public view virtual override( ERC721B, IERC721Enumerable ) returns (uint) {
-        return _owners.length - (_offset + _burned);
-    }
-
-    function transferBatch( address from, address to, uint[] calldata tokenIds, bytes calldata data ) external override{
-        for(uint i; i < tokenIds.length; ++i ){
-            safeTransferFrom( from, to, tokenIds[i], data );
-        }
-    }
-
-    function walletOfOwner( address account ) external view virtual override returns( uint[] memory ){
-        uint quantity = balanceOf( account );
-        uint[] memory wallet = new uint[]( quantity );
-        for( uint i; i < quantity; ++i ){
-            wallet[i] = tokenOfOwnerByIndex( account, i );
-        }
-        return wallet;
-    }
-}
-
 // File: @openzeppelin/contracts/access/Ownable.sol
 
 
@@ -3270,53 +2095,259 @@ contract Delegated is Ownable{
 
 
 
-pragma solidity ^0.8.17;
+/* 
+    Lazy Butts is not affiliated with Lazy Lions.
+    It is an unofficial extension brought to you by the 3D Kings.
+*/
+
+pragma solidity ^0.8.21;
 
 
 
 
 
-contract LazyButts is Delegated, ERC721EnumerableLite {
+
+contract LazyButts is
+    Delegated,
+    PaymentSplitter,
+    ERC721
+{
     using Strings for uint;
 
-    string private _tokenURIPrefix = 'https://lazybutts.3dkings.io/api/token/';
-    string private _tokenURISuffix = '';
+    uint256 public price = 0.02 ether;
+    
+    string private _tokenURIPrefix = "https://api.the3dkings.io/api/metadata/";
+    string private _tokenURISuffix = ".json";
 
-    IERC721 public LazyLions = IERC721(0xC1324510e8bF5bc4eC1771c02622226715Bb681D);
+    bytes32 public merkleRoot = 0x5bbc1ee9865f275b8666093c9096f0525756bc427e2437047cef9396ff53e069;
+    bool public isAllowListActive = false;
+    bool public isMintActive = false;
+
+    IERC721 private LazyLions =
+        IERC721(0x8943C7bAC1914C9A7ABa750Bf2B6B09Fd21037E0);
 
     event Mint(address indexed to, uint indexed tokenId);
+    
+    mapping (address => bool) public allowListMinted;
+
+    address[] private _payees = [
+        0x49CAE18B5B796e993Cce4A43cAdA316B8c7388eC, // Community Wallet
+        0x616188ADB7928954B922FBc672e2f3e82f4db578, // Operational Wallet
+        0x626cdB47a91810EDb2Bde1d69e60C1B17071CF25, // Team Member Wallet
+        0x6628FC01ae06E134e08E4E8A01Ed1075C77c87A1, // Team Member Wallet
+        0x7Cf39e8D6F6f9F25E925Dad7EB371276231780d7, // Team Member Wallet
+        0xC02Dd50b25364e747410730A1df9B72A92C3C68B  // Team Member Wallet
+    ];
+
+    uint256[] private _shares = [5000, 1000, 1000, 1000, 1000, 1000];
 
     constructor()
-    Delegated()
-    ERC721B("Lazy Butts", "BUTTS", 0){  
-    }
+        Delegated()
+        ERC721("Lazy Butts", "BUTTS")
+        PaymentSplitter(_payees, _shares)
+    {}
 
-    function tokenURI(uint tokenId) public view override returns (string memory) {
+    /**
+     * @param tokenId Id of token to check
+     * @dev Checks if token exists and returns metadata URI
+     */
+    function tokenURI(
+        uint tokenId
+    ) public view override returns (string memory) {
         require(_exists(tokenId), "Token does not exist");
-        return string(abi.encodePacked(_tokenURIPrefix, tokenId.toString(), _tokenURISuffix));
+        return
+            string(
+                abi.encodePacked(
+                    _tokenURIPrefix,
+                    tokenId.toString(),
+                    _tokenURISuffix
+                )
+            );
     }
 
-    function mint(uint tokenId) external {
-        require(!_exists(tokenId), "Token already minted");
-        address lion = LazyLions.ownerOf(tokenId);
-        require(lion == msg.sender, "Not owner of token");
-        _mint(lion, tokenId);
-        emit Mint(lion, tokenId);
+    /**
+     * @dev Checks if sender is tx.origin
+     */
+    modifier onlySender {
+        require(msg.sender == tx.origin, "Only sender allowed");
+        _;
     }
 
+    /**
+     * @dev Checks if mint is active
+     */
+    modifier mintActive {
+        require(isMintActive, "Mint is not active");
+        _;
+    }
+
+    /**
+     * @param lionId Id of token to mint
+     * @dev Mints token to owner
+     */
+    function mintButt(uint lionId) external payable onlySender mintActive {
+        require(!_exists(lionId), "Token already minted");
+        require(msg.value == price, "Not enough ether sent");
+        address lion = LazyLions.ownerOf(lionId);
+        _mint(lion, lionId);
+        emit Mint(lion, lionId);
+    }
+
+    /**
+     * @param lionIds Array of tokenIds to mint
+     * @dev Mints tokens to owners
+     */
+    function mintManyButts(uint[] calldata lionIds) external payable onlySender mintActive {
+        require(lionIds.length > 0, "No tokens to mint");
+        require(msg.value == price * lionIds.length, "Not enough ether sent");
+        address[] memory owners = new address[](lionIds.length);
+        owners = _getLionOwners(lionIds);
+        _mintMany(owners, lionIds);
+    }
+
+    /**
+     * @param tokenIds Array of tokenIds to mint
+     * @dev Mints tokens to owners
+     * @dev Only callable by delegates
+     */
+    function buttDrop(uint[] calldata tokenIds) public payable onlyDelegates {
+        require(tokenIds.length > 0, "No tokens to mint");
+        address[] memory owners = new address[](tokenIds.length);
+        owners = _getLionOwners(tokenIds);
+        _mintMany(owners, tokenIds);
+    }
+
+    /**
+     * @param tokenIds Array of tokenIds to check
+     * @dev Gets owners of tokens
+     */
+    function _getLionOwners(
+        uint[] memory tokenIds
+    ) internal view returns (address[] memory owners) {
+        owners = new address[](tokenIds.length);
+        for (uint i; i < tokenIds.length; ++i) {
+            require(!_exists(tokenIds[i]), "Token already minted");
+            address lion = LazyLions.ownerOf(tokenIds[i]);
+            owners[i] = lion;
+        }
+        return owners;
+    }
+
+    /**
+     * @param owners Array of addresses to mint tokens to
+     * @param lionIds Array of tokenIds to mint
+     * @dev Mints tokens to owners
+     */
+    function _mintMany(
+        address[] memory owners,
+        uint[] memory lionIds
+    ) internal {
+        for (uint i; i < lionIds.length; ++i) {
+            _mint(owners[i], lionIds[i]);
+            emit Mint(owners[i], lionIds[i]);
+        }
+    }
+
+    /**
+     * @param prefix New prefix to append to tokenURI
+     * @dev Only callable by delegates
+     */
     function setTokenURIPrefix(string calldata prefix) external onlyDelegates {
-        require(keccak256(abi.encodePacked(prefix)) != keccak256(abi.encodePacked(_tokenURIPrefix)), "Prefix already set"); 
+        require(
+            keccak256(abi.encodePacked(prefix)) !=
+                keccak256(abi.encodePacked(_tokenURIPrefix)),
+            "Prefix already set"
+        );
         _tokenURIPrefix = prefix;
     }
 
+    /**
+     * @param suffix New suffix to append to tokenURI
+     * @dev Only callable by delegates
+     */
     function setTokenURISuffix(string calldata suffix) external onlyDelegates {
-        require(keccak256(abi.encodePacked(suffix)) != keccak256(abi.encodePacked(_tokenURISuffix)), "Suffix already set"); 
+        require(
+            keccak256(abi.encodePacked(suffix)) !=
+                keccak256(abi.encodePacked(_tokenURISuffix)),
+            "Suffix already set"
+        );
         _tokenURISuffix = suffix;
     }
 
+    /**
+     * @param lazyLions Address of Lazy Lions contract
+     * @dev Only callable by delegates
+     */
     function setLazyLions(address lazyLions) external onlyDelegates {
         require(lazyLions != address(LazyLions), "Lazy Lions already set");
         LazyLions = IERC721(lazyLions);
+    }
+
+    /**
+     * @param newPrice New price in wei
+     * @dev Only callable by delegates
+     */
+    function updatePrice(uint256 newPrice) external onlyDelegates {
+        require(newPrice != price, "Price already set");
+        price = newPrice;
+    }
+
+    // Access List Functions
+
+    /**
+     * @param address_ Address to check
+     * @param proof_ Merkle proof
+     * @dev Checks merkle proof to determine if address is allowlisted.
+     * @dev Merkle proof is generated off-chain.
+     */
+    function isAllowListed(address address_, bytes32[] memory proof_) public view returns (bool) {
+        bytes32 _leaf = keccak256(abi.encodePacked(address_));
+
+        for (uint i = 0; i < proof_.length; i++) {
+            _leaf = _leaf < proof_[i] ? keccak256(abi.encodePacked(_leaf, proof_[i])) : keccak256(abi.encodePacked(proof_[i], _leaf));
+        }
+        return _leaf == merkleRoot;
+    }
+
+    /**
+     * @param proof_ Merkle proof
+     * @param lionIds Array of tokenIds to mint
+     * @dev Public mint function for allowlist. Follows same rules as public mint, but requires merkle proof.
+     */
+    function mintAllowList(bytes32[] memory proof_, uint[] calldata lionIds) external payable {
+        address _minter = msg.sender;
+        require(isAllowListActive, "Allowlist is not active!");
+        require(isAllowListed(_minter, proof_), "Address is not allowlisted!");
+        require(lionIds.length > 0, "No tokens to mint");
+        uint256 _totalPrice = allowListMinted[_minter] ? price * lionIds.length : lionIds.length > 1 ? price / 2 + price * (lionIds.length - 1) : price / 2;
+        require(msg.value == _totalPrice, "Not enough ether sent");
+        if (!allowListMinted[_minter]) allowListMinted[_minter] = true;
+        address[] memory owners = new address[](lionIds.length);
+        owners = _getLionOwners(lionIds);
+        _mintMany(owners, lionIds);
+    }
+
+    /**
+     * @notice Sets the merkle root for the allowlist. Can only be called by delegates.
+     */ 
+    function setMerkleRoot(bytes32 merkleRoot_) external onlyDelegates {
+        merkleRoot = merkleRoot_;
+    }
+
+    /**
+     * @notice Toggle the allowlist active state. Can only be called by delegates.
+     */
+    function setAllowListActive(bool isAllowListActive_) external onlyDelegates {
+        require(isAllowListActive != isAllowListActive_, "Allowlist already set");
+        isAllowListActive = isAllowListActive_;
+    }
+
+    /**
+     * @notice Toggle the mint active state. Can only be called by delegates.
+     */
+    function setMintActive(bool isMintActive_) external onlyDelegates {
+        require(isMintActive != isMintActive_, "Mint already set");
+        isMintActive = isMintActive_;
     }
 
 }
